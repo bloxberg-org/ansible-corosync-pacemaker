@@ -69,6 +69,62 @@ host_vars:
     internal_ip: 10.0.0.3
 ```
 
+Multi-site cluster configuration
+```yaml
+all:
+  children:
+    newyork:
+      vars:
+        totem_cluster_name: 'NewYork'
+        hacluster_password: 'randomgeneratedpassword'
+        ansible_connection: local
+        booth_type: 'site'
+        booth_ip: '10.254.1.15'
+        booth_config: 'setup'
+      hosts:
+        ny01:
+          ansible_host: '10.254.1.15'
+          ansible_hostname: 'ny01'
+    london:
+      vars:
+        totem_cluster_name: 'London'
+        hacluster_password: 'randomgeneratedpassword'
+        ansible_connection: ssh
+        booth_type: site
+        booth_ip: '10.254.2.15'
+        booth_config: 'pull'
+      hosts:
+        ld01:
+          ansible_host: '10.254.2.8'
+          ansible_hostname: 'ld01'
+        ld02:
+          ansible_host: '10.254.2.9'
+          ansible_hostname: 'ld02'
+    munich:
+      vars:
+        totem_cluster_name: 'Munich'
+        hacluster_password: 'randomgeneratedpassword'
+        ansible_connection: ssh
+        booth_type: arbitrator
+        booth_ip: '10.254.3.15'
+        booth_config: 'pull'
+      hosts:
+        muc01:
+          ansible_host: '10.254.3.9'
+          ansible_hostname: 'muc01'
+        muc02:
+          ansible_host: '10.254.3.10'
+          ansible_hostname: 'muc01'
+        muc03:
+          ansible_host: '10.254.3.11'
+          ansible_hostname: 'muc01'
+```
+
+The cluster site with booth_config 'setup' generates the booth configuration.
+Subsequently the other cluster sites will pull the booth configuration.
+There should be only one cluster site configured as 'setup' and all others as 'pull'
+When deploying is required to prioritize the booth_config 'setup' site first to ensure configuration is performed on the 'pull' sites accordingly.
+
 ## Testing
 
 Molecule with docker is being used.
