@@ -24,7 +24,7 @@
     - restart corosync
     - restart pacemaker
 
-- name: config | enable services
+- name: config | enable services site
   service:
     name: "{{ item }}"
     enabled: true
@@ -49,11 +49,50 @@
     command: "{{ item }}"
     with_items:
       - pcs cluster auth -u hacluster -p {{ corosync_hacluster_password | quote }}
+      - pcs cluster auth {% for item in query('inventory_hostnames', 'all') %}{% if item != '_authkey_dummy' %}{% if hostvars[item]['booth_config'] == 'setup'%}{{ hostvars[item]['ansible_hostname'] | quote }}{% endif %}{% endif %}{% endfor %} -u hacluster -p {% for item in query('inventory_hostnames', 'all') %}{% if item != '_authkey_dummy' %}{% if hostvars[item]['booth_config'] == 'setup'%}{{ hostvars[item]['hacluster_password'] | quote }}{% endif %}{% endif %}{% endfor %}
       - pcs cluster enable --all
       - pcs cluster start --all
     when: >-
       not stat_auth_files.results.0.stat.exists
       and not stat_auth_files.results.1.stat.exists
+
+  - name: config | check if booth config is done already
+    stat:
+      path: /etc/booth/booth.key
+    register: stat_booth_key
+
+  - name: config | booth setup
+    command: pcs booth setup sites{% for item in query('inventory_hostnames', 'all') %}{% if item != '_authkey_dummy' %}{% if hostvars[item]['booth_type'] == 'site' %} {{ hostvars[item]['booth_ip'] }}{% endif %}{% endif %}{% endfor %} arbitrators{% for item in query('inventory_hostnames', 'all') %}{% if item != '_authkey_dummy' %}{% if hostvars[item]['booth_type'] == 'arbitrator' %} {{ hostvars[item]['booth_ip'] }}{% endif %}{% endif %}{% endfor %}
+    when: >-
+      (not stat_booth_key.stat.exists) and
+      (booth_config == 'setup')
+
+  - name: config | booth pull
+    command: pcs booth pull {% for item in query('inventory_hostnames', 'all') %}{% if item != '_authkey_dummy' %}{% if hostvars[item]['booth_config'] == 'setup'%}{{ hostvars[item]['ansible_hostname'] }}{% endif %}{% endif %}{% endfor %}
+    when: >-
+      (not stat_booth_key.stat.exists) and
+      (booth_config == 'pull')
+
+  - name: config | booth sync
+    command: pcs booth sync
+    when: >-
+      not stat_booth_key.stat.exists
+
+  - name: config | booth site ip
+    command: pcs booth create ip {{ booth_ip }}
+    when: >-
+      (not stat_booth_key.stat.exists) and
+      (booth_type == 'site')
+
+  - name: config | booth arbitrator start
+    command: pcs booth start
+    when: >-
+      booth_type == 'arbitrator'
+
+  - name: config | booth arbitrator enable
+    command: pcs booth enable
+    when: >-
+      booth_type == 'arbitrator'
 
   throttle: 1
 
@@ -75,7 +114,10 @@
       with_items: '{{ corosync_cluster_defaults }}'
       when: "(item.key|string + ':' + ' ' + item.value|string) not in pcs_props_out.stdout"
 
-  when: inventory_hostname == play_hosts[0]
+  when: >-
+    (inventory_hostname == play_hosts[0]) and
+    (booth_type == 'site')
+
 
 - name: config | set PCSD web GUI config
   lineinfile:

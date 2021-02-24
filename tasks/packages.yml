@@ -15,5 +15,6 @@
       - pcs
       - crmsh
       - libxml2-utils
+      - booth-pacemaker
     update_cache: true
     state: present

@@ -1,20 +1,25 @@
-# Please read the corosync.conf.5 manual page
 totem {
+  # version and name
   version: 2
-	k8s_cluster_name: corosync
-	token: 3000
-	token_retransmits_before_loss_const: 10
-	clear_node_high_bit: yes
+  cluster_name: {% if totem_cluster_name is defined %}{{totem_cluster_name}}{% else %}default{% endif %}
 
-  secauth: off
+  # token configuration
+  token: {% if totem_token is defined %}{{totem_token}}{% else %}3000{% endif %}
 
+  token_retransmits_before_loss_const: 10
+  clear_node_high_bit: yes
 
+  # transpor configuration
   ip_version: ipv4
-
   transport: udpu
-
+ 
+  # interface configuration 
   interface {
     ringnumber: 0
+    ttl: 1
+    bindnetaddr: {% if corosync_use_internal_ip|bool %} {{ internal_ip|mandatory }} {% else %} {{ ansible_default_ipv4['address'] }} {% endif %}
+
+    mcastport: 5405
     ttl: 1
   }
 }
@@ -23,8 +28,7 @@ nodelist {
 {% for node in play_hosts %}
   node {
     name: {{ hostvars[node]['ansible_hostname'] }}
-
-    ring0_addr: {% if corosync_use_internal_ip|bool %} {{ hostvars[node]['internal_ip']|mandatory }} {% else %} {{ hostvars[node]['ansible_default_ipv4']['address'] }} {% endif%}
+    ring0_addr: {% if corosync_use_internal_ip|bool %} {{ hostvars[node]['internal_ip']|mandatory }} {% else %} {{ hostvars[node]['ansible_default_ipv4']['address'] }} {% endif %}
 
     nodeid: {{ loop.index }}
   }
@@ -34,9 +38,9 @@ nodelist {
 logging {
   fileline: off
   to_stderr: no
-  to_logfile: on
+  to_logfile: yes
   logfile: /var/log/corosync/corosync.log
-  to_syslog: on
+  to_syslog: yes
   syslog_facility: daemon
   debug: off
   timestamp: on
