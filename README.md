@@ -3,7 +3,7 @@
 
 <div align="center">
   <a href="https://galaxy.ansible.com/bloxberg/corosync_pacemaker">
-    <img src="https://img.shields.io/ansible/role/53303 alt="Ansible Galaxy" />
+    <img src="https://img.shields.io/ansible/role/53303" alt="Ansible Galaxy" />
   </a>
   <a href="https://galaxy.ansible.com/bloxberg/corosync_pacemaker">
     <img src="https://img.shields.io/ansible/quality/53303" alt="Ansible Quality Score" />
