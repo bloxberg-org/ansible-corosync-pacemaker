@@ -1,4 +1,4 @@
-<h1 align="center">Pacemaker and Corosync cluster ansible role</h1>
+<h1 align="center">Pacemaker and Corosync cluster ansible role with booth support</h1>
 <br />
 
 <div align="center">
